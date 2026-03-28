@@ -21,7 +21,9 @@ class RenderImageStack(Stack):
 
         repo_root = Path(__file__).resolve().parent.parent
 
-        use_prebuilt = str(self.node.try_get_context("usePrebuiltImage") or "").lower() in (
+        use_prebuilt = str(
+            self.node.try_get_context("usePrebuiltImage") or ""
+        ).lower() in (
             "true",
             "1",
             "yes",
@@ -59,7 +61,7 @@ class RenderImageStack(Stack):
 
         integration = apigwv2_integrations.HttpLambdaIntegration(
             "RenderPdfIntegration",
-            render_fn,
+            render_fn,  # ty: ignore[invalid-argument-type]  # DockerImageFunction implements IFunction
             payload_format_version=apigwv2.PayloadFormatVersion.VERSION_2_0,
         )
 

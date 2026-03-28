@@ -81,28 +81,23 @@ jobs:
           docker tag "$GHCR_IMAGE:$IMAGE_TAG" "$ECR_URI:$IMAGE_TAG"
           docker push "$ECR_URI:$IMAGE_TAG"
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Install CDK app dependencies
         working-directory: infrastructure
-        run: |
-          python -m venv .venv
-          .venv/bin/pip install -U pip
-          .venv/bin/pip install -r requirements.txt
+        run: uv sync
 
       - name: CDK deploy
         working-directory: infrastructure
         env:
           IMAGE_TAG: ${{ steps.meta.outputs.tag }}
         run: |
-          npx aws-cdk@2 deploy --require-approval never \
+          npx aws-cdk@^2 deploy --require-approval never \
             -c usePrebuiltImage=true \
             -c "imageTag=${IMAGE_TAG}"

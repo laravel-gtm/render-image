@@ -55,4 +55,4 @@ def _json_error(status_code: int, message: str) -> dict[str, Any]:
 def _content_disposition(filename: str | None) -> str:
     if filename:
         return f'attachment; filename="{filename}"'
-    return "attachment; filename=\"document.pdf\""
+    return 'attachment; filename="document.pdf"'

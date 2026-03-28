@@ -6,14 +6,20 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "playwright>=1.55.0",
-    "ruff>=0.15.8",
 ]
 
 [dependency-groups]
 dev = [
     "pytest>=8.4.2",
+    "ruff>=0.15.8",
     "ty>=0.0.26",
 ]
 
 [tool.uv]
 python-preference = "only-managed"
+
+[tool.ruff]
+extend-exclude = ["infrastructure"]
+
+[tool.ty.src]
+exclude = ["infrastructure/"]

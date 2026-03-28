@@ -26,12 +26,11 @@ RUN dnf install -y \
     pango \
     && dnf clean all
 
-RUN pip install --no-cache-dir uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 COPY pyproject.toml uv.lock ${LAMBDA_TASK_ROOT}/
 WORKDIR ${LAMBDA_TASK_ROOT}
-RUN uv export --frozen --no-dev -o requirements.txt && \
-    pip install --no-cache-dir -r requirements.txt
+RUN uv export --frozen --no-dev | uv pip install --system --no-cache -r -
 
 COPY render_image ${LAMBDA_TASK_ROOT}/render_image/
 

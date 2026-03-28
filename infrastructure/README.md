@@ -10,8 +10,8 @@ The Python app entrypoint is [`app.py`](app.py), which instantiates [`RenderImag
 |------|------|
 | [`app.py`](app.py) | CDK app: creates `RenderImageStack` |
 | [`render_image_stack.py`](render_image_stack.py) | Stack: `DockerImageFunction`, `HttpApi`, route `POST /render`, output `RenderApiUrl` (see **Image sources** below) |
-| [`cdk.json`](cdk.json) | CDK config; `app` runs `.venv/bin/python app.py` |
-| [`requirements.txt`](requirements.txt) | `aws-cdk-lib`, `constructs` |
+| [`cdk.json`](cdk.json) | CDK config; `app` runs `uv run python app.py` |
+| [`pyproject.toml`](pyproject.toml) | `aws-cdk-lib`, `constructs` (managed by `uv`) |
 | [`iam/`](iam/) | Example IAM policies for GitHub Actions OIDC deploy role (trust + permissions) |
 
 Synth output goes to `cdk.out/` (gitignored).
@@ -20,15 +20,15 @@ Synth output goes to `cdk.out/` (gitignored).
 
 - **AWS account** and credentials (`aws configure` or environment variables)
 - **Docker** (for `cdk deploy` so CDK can build and push the Lambda container image)
-- **Node.js** (for `npx aws-cdk`)
-- **Python 3** (for the CDK app and venv)
+- **Node.js 24** (for `npx aws-cdk`)
+- **[uv](https://docs.astral.sh/uv/)** (Python package manager; manages Python 3.14 automatically)
 
 ## One-time: bootstrap
 
 Per **account** and **Region**, CDK needs tooling buckets, ECR, and IAM roles. Run once (replace account and region):
 
 ```bash
-npx aws-cdk@2 bootstrap aws://ACCOUNT_ID/REGION
+npx aws-cdk@^2 bootstrap aws://ACCOUNT_ID/REGION
 ```
 
 Use the same Region you deploy to (for example `us-east-1`).
@@ -38,13 +38,8 @@ Use the same Region you deploy to (for example `us-east-1`).
 From this directory:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate.bat
-pip install -U pip
-pip install -r requirements.txt
+uv sync
 ```
-
-On Windows, either activate the venv before running CDK or change [`cdk.json`](cdk.json) `app` to `.venv\Scripts\python.exe app.py`.
 
 ## Image sources
 
@@ -63,14 +58,14 @@ For prebuilt mode, create the ECR repository once if it does not exist (the depl
 
 ```bash
 export AWS_REGION=your-region   # if not already set
-npx aws-cdk@2 synth
-npx aws-cdk@2 deploy --require-approval never
+npx aws-cdk@^2 synth
+npx aws-cdk@^2 deploy --require-approval never
 ```
 
 **Prebuilt image in ECR** (for example after CI copied GHCR → ECR):
 
 ```bash
-npx aws-cdk@2 deploy --require-approval never \
+npx aws-cdk@^2 deploy --require-approval never \
   -c usePrebuiltImage=true \
   -c "imageTag=FULL_GIT_SHA"
 ```
