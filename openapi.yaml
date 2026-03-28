@@ -1,0 +1,193 @@
+openapi: "3.1.0"
+info:
+  title: render-image
+  description: >-
+    Framework-agnostic PDF renderer: HTML in, PDF bytes out via
+    Playwright/Chromium. Designed to be called from Laravel (Spatie PDF
+    driver) across multiple runtimes.
+  version: "1.0.0"
+
+paths:
+  /render:
+    post:
+      operationId: renderPdf
+      summary: Render HTML to PDF
+      description: >-
+        Accepts an HTML payload and returns a rendered PDF. The request is
+        validated and rendered synchronously via a headless Chromium instance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenderRequest"
+      responses:
+        "200":
+          description: Rendered PDF document
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="document.pdf"'
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Validation error (bad input)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Render failure (browser/engine error)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    RenderRequest:
+      type: object
+      required:
+        - html
+      description: >-
+        PDF render request. `format` and `paper_size` are mutually exclusive —
+        provide at most one. When neither is specified the renderer defaults to
+        A4 page size.
+      not:
+        description: format and paper_size cannot both be non-null.
+        required:
+          - format
+          - paper_size
+        properties:
+          format:
+            not:
+              type: "null"
+          paper_size:
+            not:
+              type: "null"
+      properties:
+        html:
+          type: string
+          minLength: 1
+          maxLength: 2000000
+          description: HTML content to render. Max 2 MB UTF-8 encoded.
+        format:
+          type:
+            - string
+            - "null"
+          default: "a4"
+          enum:
+            - a0
+            - a1
+            - a2
+            - a3
+            - a4
+            - a5
+            - a6
+            - legal
+            - letter
+            - tabloid
+            - ledger
+            - null
+          description: >-
+            Named page format. Mutually exclusive with `paper_size`.
+        paper_size:
+          oneOf:
+            - $ref: "#/components/schemas/PaperSize"
+            - type: "null"
+          default: null
+          description: >-
+            Custom page dimensions. Mutually exclusive with `format`. Requires
+            both `width` and `height`.
+        margins:
+          $ref: "#/components/schemas/Margins"
+        orientation:
+          type: string
+          enum:
+            - portrait
+            - landscape
+          default: portrait
+        header_html:
+          type:
+            - string
+            - "null"
+          default: null
+          description: HTML for the page header.
+        footer_html:
+          type:
+            - string
+            - "null"
+          default: null
+          description: HTML for the page footer.
+        print_background:
+          type: boolean
+          default: true
+          description: Whether to print background graphics.
+        prefer_css_page_size:
+          type: boolean
+          default: false
+          description: >-
+            Give CSS-defined @page size priority over `format` / `paper_size`.
+        timeout_ms:
+          type: integer
+          minimum: 1
+          maximum: 120000
+          default: 30000
+          description: Render timeout in milliseconds.
+        filename:
+          type:
+            - string
+            - "null"
+          default: null
+          description: >-
+            Suggested filename for the Content-Disposition header. Defaults to
+            "document.pdf" when null.
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          default: {}
+          description: Arbitrary string key-value metadata passed through to the result.
+
+    PaperSize:
+      type: object
+      required:
+        - width
+        - height
+      properties:
+        width:
+          type: string
+          description: 'Page width as a CSS size string (e.g. "210mm").'
+        height:
+          type: string
+          description: 'Page height as a CSS size string (e.g. "297mm").'
+
+    Margins:
+      type: object
+      description: Page margins as CSS size strings.
+      properties:
+        top:
+          type: string
+          default: "0mm"
+        right:
+          type: string
+          default: "0mm"
+        bottom:
+          type: string
+          default: "0mm"
+        left:
+          type: string
+          default: "0mm"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message.
