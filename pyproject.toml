@@ -1,0 +1,19 @@
+[project]
+name = "render-image"
+version = "0.1.0"
+description = "Framework-agnostic PDF rendering core for Spatie Laravel PDF integrations"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "playwright>=1.55.0",
+    "ruff>=0.15.8",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "ty>=0.0.26",
+]
+
+[tool.uv]
+python-preference = "only-managed"
