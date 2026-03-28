@@ -3,12 +3,22 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import Protocol
 
 from playwright.async_api import Page, PdfMargins, async_playwright
 
 from .contracts import RenderRequest, RenderResult
 from .errors import RenderError
+
+_LAMBDA_CHROMIUM_ARGS = (
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--no-sandbox",
+    "--no-zygote",
+    "--single-process",
+)
+
 
 _FORMAT_MAP = {
     "a0": "A0",
@@ -40,7 +50,12 @@ class PlaywrightRenderer:
         request.validate()
         try:
             async with async_playwright() as playwright:
-                browser = await playwright.chromium.launch()
+                if os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+                    browser = await playwright.chromium.launch(
+                        args=list(_LAMBDA_CHROMIUM_ARGS),
+                    )
+                else:
+                    browser = await playwright.chromium.launch()
                 page = await browser.new_page()
                 await page.set_content(request.html, wait_until="networkidle")
 
@@ -65,7 +80,9 @@ async def render_pdf_async(
     return await active_renderer.render(request)
 
 
-def render_pdf(request: RenderRequest, renderer: Renderer | None = None) -> RenderResult:
+def render_pdf(
+    request: RenderRequest, renderer: Renderer | None = None
+) -> RenderResult:
     """Synchronous rendering entrypoint for Lambda/CLI usage."""
 
     try:

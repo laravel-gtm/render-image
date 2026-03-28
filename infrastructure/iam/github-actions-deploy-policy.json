@@ -1,0 +1,159 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AssumeCdkBootstrapRoles",
+            "Effect": "Allow",
+            "Action": "sts:AssumeRole",
+            "Resource": "arn:aws:iam::989005111793:role/cdk-hnb659fds-*"
+        },
+        {
+            "Sid": "CloudFormation",
+            "Effect": "Allow",
+            "Action": [
+                "cloudformation:CreateChangeSet",
+                "cloudformation:DeleteChangeSet",
+                "cloudformation:Describe*",
+                "cloudformation:ExecuteChangeSet",
+                "cloudformation:GetTemplate",
+                "cloudformation:CreateStack",
+                "cloudformation:UpdateStack",
+                "cloudformation:DeleteStack",
+                "cloudformation:List*",
+                "cloudformation:ValidateTemplate",
+                "cloudformation:ContinueUpdateRollback"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "CdkToolkitS3",
+            "Effect": "Allow",
+            "Action": [
+                "s3:GetObject",
+                "s3:GetObjectVersion",
+                "s3:PutObject",
+                "s3:ListBucket",
+                "s3:GetBucketLocation",
+                "s3:AbortMultipartUpload",
+                "s3:ListMultipartUploadParts"
+            ],
+            "Resource": [
+                "arn:aws:s3:::cdk-hnb659fds-assets-989005111793-*",
+                "arn:aws:s3:::cdk-hnb659fds-assets-989005111793-*/*"
+            ]
+        },
+        {
+            "Sid": "CdkBootstrapVersion",
+            "Effect": "Allow",
+            "Action": [
+                "ssm:GetParameter",
+                "ssm:GetParameters"
+            ],
+            "Resource": "arn:aws:ssm:*:989005111793:parameter/cdk-bootstrap/*"
+        },
+        {
+            "Sid": "EcrAuth",
+            "Effect": "Allow",
+            "Action": "ecr:GetAuthorizationToken",
+            "Resource": "*"
+        },
+        {
+            "Sid": "EcrCreateRepository",
+            "Effect": "Allow",
+            "Action": "ecr:CreateRepository",
+            "Resource": "*"
+        },
+        {
+            "Sid": "EcrPushPull",
+            "Effect": "Allow",
+            "Action": [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:BatchGetImage",
+                "ecr:CompleteLayerUpload",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:InitiateLayerUpload",
+                "ecr:PutImage",
+                "ecr:UploadLayerPart",
+                "ecr:DescribeRepositories",
+                "ecr:DescribeImages",
+                "ecr:ListImages",
+                "ecr:TagResource"
+            ],
+            "Resource": "arn:aws:ecr:*:989005111793:repository/cdk-*"
+        },
+        {
+            "Sid": "LambdaApiLogsEvents",
+            "Effect": "Allow",
+            "Action": [
+                "lambda:*",
+                "apigateway:*",
+                "logs:*",
+                "events:DescribeRule",
+                "events:PutRule",
+                "events:DeleteRule",
+                "events:PutTargets",
+                "events:RemoveTargets"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "IamManageCdkRoles",
+            "Effect": "Allow",
+            "Action": [
+                "iam:CreateRole",
+                "iam:DeleteRole",
+                "iam:GetRole",
+                "iam:AttachRolePolicy",
+                "iam:DetachRolePolicy",
+                "iam:PutRolePolicy",
+                "iam:DeleteRolePolicy",
+                "iam:GetRolePolicy",
+                "iam:ListRolePolicies",
+                "iam:ListAttachedRolePolicies",
+                "iam:TagRole",
+                "iam:UntagRole",
+                "iam:UpdateAssumeRolePolicy"
+            ],
+            "Resource": "arn:aws:iam::989005111793:role/*"
+        },
+        {
+            "Sid": "IamPassRoleLambda",
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "arn:aws:iam::989005111793:role/*",
+            "Condition": {
+                "StringEquals": {
+                    "iam:PassedToService": "lambda.amazonaws.com"
+                }
+            }
+        },
+        {
+            "Sid": "IamPassRoleApiGateway",
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "arn:aws:iam::989005111793:role/*",
+            "Condition": {
+                "StringEquals": {
+                    "iam:PassedToService": "apigateway.amazonaws.com"
+                }
+            }
+        },
+        {
+            "Sid": "IamPassRoleEvents",
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "arn:aws:iam::989005111793:role/*",
+            "Condition": {
+                "StringEquals": {
+                    "iam:PassedToService": "events.amazonaws.com"
+                }
+            }
+        },
+        {
+            "Sid": "StsGetCallerIdentity",
+            "Effect": "Allow",
+            "Action": "sts:GetCallerIdentity",
+            "Resource": "*"
+        }
+    ]
+}

@@ -1,0 +1,41 @@
+FROM public.ecr.aws/lambda/python:3.14
+
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+
+# Chromium system libraries on Amazon Linux 2023 (Playwright has no official AL2023 install-deps).
+RUN dnf install -y \
+    alsa-lib \
+    atk \
+    at-spi2-atk \
+    at-spi2-core \
+    cups-libs \
+    gtk3 \
+    libdrm \
+    libX11 \
+    libXcomposite \
+    libXdamage \
+    libXext \
+    libXfixes \
+    libXi \
+    libXrandr \
+    libxcb \
+    libxkbcommon \
+    mesa-libgbm \
+    nss \
+    nspr \
+    pango \
+    && dnf clean all
+
+RUN pip install --no-cache-dir uv
+
+COPY pyproject.toml uv.lock ${LAMBDA_TASK_ROOT}/
+WORKDIR ${LAMBDA_TASK_ROOT}
+RUN uv export --frozen --no-dev -o requirements.txt && \
+    pip install --no-cache-dir -r requirements.txt
+
+COPY render_image ${LAMBDA_TASK_ROOT}/render_image/
+
+RUN mkdir -p ${PLAYWRIGHT_BROWSERS_PATH} && \
+    playwright install chromium
+
+CMD ["render_image.adapters.aws_lambda.lambda_handler"]

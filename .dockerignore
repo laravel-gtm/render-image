@@ -1,0 +1,16 @@
+.git
+.gitignore
+.venv
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.ruff_cache
+**/.cursor
+**/cdk.out
+**/node_modules
+infrastructure
+CLAUDE.md
+openapi.yaml
+polyscope.json
+main.py
+README.md
