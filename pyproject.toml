@@ -23,3 +23,7 @@ extend-exclude = ["infrastructure"]
 
 [tool.ty.src]
 exclude = ["infrastructure/"]
+
+# infrastructure/ is a separate uv project (aws-cdk-lib, constructs). Resolve imports from its .venv.
+[tool.pyright]
+executionEnvironments = [{ root = "infrastructure", extraPaths = ["infrastructure/.venv/lib/python3.14/site-packages"] }]

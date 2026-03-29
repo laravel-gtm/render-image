@@ -24,7 +24,7 @@ npx aws-cdk@^2 bootstrap aws://ACCOUNT_ID/REGION   # One-time per account/region
 AWS CDK app (Python, `aws-cdk-lib`) deploying the render-image service as a Lambda container behind an HTTP API Gateway.
 
 - `app.py` — CDK entrypoint; instantiates `RenderImageStack`
-- `render_image_stack.py` — Single stack: `DockerImageFunction` (3008 MB, 29s timeout, x86_64) + `HttpApi` with `POST /render` route. Outputs `RenderApiUrl`
+- `render_image_stack.py` — Single stack: `DockerImageFunction` + `HttpApi` with `POST /render` route. Outputs `RenderApiUrl`. Memory, timeout, image name, and stack name are configurable via CDK context
 - `iam/` — Example IAM policies for GitHub Actions OIDC deploy role
 
 ## Key Constraints
@@ -33,11 +33,15 @@ AWS CDK app (Python, `aws-cdk-lib`) deploying the render-image service as a Lamb
 - `cdk.json` runs the app via `uv run python app.py`
 - Two image modes controlled by CDK context flags:
   - **Default**: builds from repo root `Dockerfile.lambda` during deploy (requires Docker)
-  - **Prebuilt**: `-c usePrebuiltImage=true -c imageTag=<sha>` pulls from ECR repo `render-image`; `imageTag` is required or deploy raises `ValueError`
-- ECR repository name is hardcoded as `render-image` in `render_image_stack.py`
+  - **Prebuilt**: `-c usePrebuiltImage=true -c imageTag=<sha>` pulls from ECR; `imageTag` is required or deploy raises `ValueError`
+- CDK context flags for configuration (all have sensible defaults):
+  - `imageName` — ECR repo and API name (default: `render-image`)
+  - `stackName` — CloudFormation stack name (default: `RenderImageStack`)
+  - `lambdaMemoryMb` — Lambda memory in MB (default: `3008`)
+  - `lambdaTimeoutSeconds` — Lambda timeout in seconds (default: `29`)
 
 ## CI Pipeline
 
 1. `publish-docker-image.yml` — builds `Dockerfile.lambda`, pushes to GHCR tagged with commit SHA + `latest`
 2. `deploy-aws.yml` — triggered on successful publish; copies GHCR image to ECR, runs `cdk deploy` with prebuilt image context. Can also be triggered manually with an existing `image_tag`
-- Requires `AWS_DEPLOY_ROLE_ARN` secret and optional `AWS_REGION` variable
+- Requires `AWS_DEPLOY_ROLE_ARN` secret and `AWS_REGION` variable. Optional: `IMAGE_NAME`, `STACK_NAME`, `LAMBDA_MEMORY_MB`, `LAMBDA_TIMEOUT_SECONDS`

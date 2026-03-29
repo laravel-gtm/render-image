@@ -36,7 +36,7 @@ All adapters funnel through the same `render_pdf()` call. The Cloudflare adapter
 
 **Infrastructure** (`infrastructure/`): AWS CDK stack deploying the Lambda container behind HTTP API Gateway. Has its own `CLAUDE.md` with CDK-specific commands and context.
 
-**CI**: Two GitHub Actions workflows — `publish-docker-image.yml` builds and pushes to GHCR, then `deploy-aws.yml` copies that image to ECR and runs `cdk deploy` with the prebuilt image.
+**CI**: Two GitHub Actions workflows — `publish-docker-image.yml` builds and pushes to GHCR, then `deploy-aws.yml` copies that image to ECR and runs `cdk deploy` with the prebuilt image. All deployment config (region, image name, stack name, Lambda memory/timeout) is driven by GitHub Actions variables and CDK context.
 
 ## Key Constraints
 

@@ -40,6 +40,7 @@ class Renderer(Protocol):
 
     async def render(self, request: RenderRequest) -> RenderResult:
         """Render a PDF for the provided request."""
+        ...
 
 
 class PlaywrightRenderer:

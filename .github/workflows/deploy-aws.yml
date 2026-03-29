@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: Full git SHA of the image already published to GHCR (same tag as ghcr.io/.../render-image)
+        description: Full git SHA of the image already published to GHCR
         required: true
         type: string
 
@@ -32,7 +32,8 @@ jobs:
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
         github.event.workflow_run.head_repository.full_name == github.repository)
     env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      IMAGE_NAME: ${{ vars.IMAGE_NAME || 'render-image' }}
     steps:
       - name: Resolve image tag
         id: meta
@@ -50,7 +51,7 @@ jobs:
 
       - name: GHCR image name
         run: |
-          echo "GHCR_IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')/render-image" >> "$GITHUB_ENV"
+          echo "GHCR_IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')/${IMAGE_NAME}" >> "$GITHUB_ENV"
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -67,8 +68,8 @@ jobs:
 
       - name: Ensure ECR repository exists
         run: |
-          aws ecr describe-repositories --repository-names render-image --region "$AWS_REGION" \
-            || aws ecr create-repository --repository-name render-image --region "$AWS_REGION"
+          aws ecr describe-repositories --repository-names "$IMAGE_NAME" --region "$AWS_REGION" \
+            || aws ecr create-repository --repository-name "$IMAGE_NAME" --region "$AWS_REGION"
 
       - name: Pull from GHCR and push to Amazon ECR
         env:
@@ -76,7 +77,7 @@ jobs:
         run: |
           docker pull "$GHCR_IMAGE:$IMAGE_TAG"
           ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
-          ECR_URI="${ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/render-image"
+          ECR_URI="${ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_NAME}"
           aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "${ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
           docker tag "$GHCR_IMAGE:$IMAGE_TAG" "$ECR_URI:$IMAGE_TAG"
           docker push "$ECR_URI:$IMAGE_TAG"
@@ -100,4 +101,8 @@ jobs:
         run: |
           npx aws-cdk@^2 deploy --require-approval never \
             -c usePrebuiltImage=true \
-            -c "imageTag=${IMAGE_TAG}"
+            -c "imageTag=${IMAGE_TAG}" \
+            -c "imageName=${IMAGE_NAME}" \
+            -c "stackName=${{ vars.STACK_NAME || 'RenderImageStack' }}" \
+            -c "lambdaMemoryMb=${{ vars.LAMBDA_MEMORY_MB || '3008' }}" \
+            -c "lambdaTimeoutSeconds=${{ vars.LAMBDA_TIMEOUT_SECONDS || '29' }}"

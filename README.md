@@ -133,8 +133,14 @@ The deploy job assumes an IAM role via [OIDC](https://docs.github.com/en/actions
 
 **Repository settings**
 
-1. Add a **secret** `AWS_DEPLOY_ROLE_ARN` with the ARN of the IAM role GitHub may assume (for example `arn:aws:iam::123456789012:role/github-actions-render-image-deploy`).
-2. Optionally set a **variable** `AWS_REGION` (defaults to `us-east-2` in the workflow if unset).
+| Type | Name | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| Secret | `AWS_DEPLOY_ROLE_ARN` | Yes | — | ARN of the IAM role GitHub may assume (e.g. `arn:aws:iam::123456789012:role/github-actions-render-image-deploy`) |
+| Variable | `AWS_REGION` | Yes | — | AWS region to deploy into (e.g. `us-east-1`) |
+| Variable | `IMAGE_NAME` | No | `render-image` | ECR repository and GHCR image name |
+| Variable | `STACK_NAME` | No | `RenderImageStack` | CloudFormation stack name |
+| Variable | `LAMBDA_MEMORY_MB` | No | `3008` | Lambda function memory in MB |
+| Variable | `LAMBDA_TIMEOUT_SECONDS` | No | `29` | Lambda function timeout in seconds |
 
 **AWS: OIDC provider (once per account)**
 
