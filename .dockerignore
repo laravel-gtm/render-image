@@ -10,7 +10,6 @@
 **/node_modules
 infrastructure
 CLAUDE.md
-openapi.yaml
 polyscope.json
 main.py
 README.md

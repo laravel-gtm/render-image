@@ -18,7 +18,7 @@ from constructs import Construct
 
 
 class RenderImageStack(Stack):  # pylint: disable=too-few-public-methods
-    """Lambda container function and HTTP API with POST /render."""
+    """Lambda container function and HTTP API with POST /render, GET /up, and GET /openapi.json."""
 
     def _docker_image_code(
         self, repo_root: Path
@@ -92,12 +92,24 @@ class RenderImageStack(Stack):  # pylint: disable=too-few-public-methods
             integration=integration,
         )
 
+        http_api.add_routes(
+            path="/up",
+            methods=[apigwv2.HttpMethod.GET],
+            integration=integration,
+        )
+
+        http_api.add_routes(
+            path="/openapi.json",
+            methods=[apigwv2.HttpMethod.GET],
+            integration=integration,
+        )
+
         base_url = http_api.api_endpoint
         CfnOutput(
             self,
             "RenderApiUrl",
             value=base_url,
-            description="HTTP API base URL; POST {base}/render with JSON body",
+            description="HTTP API base URL; POST /render, GET /up, GET /openapi.json",
         )
 
         self._configure_custom_domain(http_api)

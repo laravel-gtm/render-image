@@ -33,6 +33,7 @@ WORKDIR ${LAMBDA_TASK_ROOT}
 RUN uv export --frozen --no-dev | uv pip install --system --no-cache -r -
 
 COPY render_image ${LAMBDA_TASK_ROOT}/render_image/
+COPY openapi.yaml ${LAMBDA_TASK_ROOT}/openapi.yaml
 
 RUN mkdir -p ${PLAYWRIGHT_BROWSERS_PATH} && \
     playwright install chromium

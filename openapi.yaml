@@ -8,6 +8,34 @@ info:
   version: "1.0.0"
 
 paths:
+  /up:
+    get:
+      operationId: healthCheck
+      summary: Health check
+      description: >-
+        Returns service status, name, version, and AWS region. Does not launch
+        Chromium — use synthetic monitoring for deep health checks.
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /openapi.json:
+    get:
+      operationId: getOpenApiSpec
+      summary: OpenAPI specification
+      description: Returns this OpenAPI specification as JSON.
+      responses:
+        "200":
+          description: OpenAPI spec document
+          content:
+            application/json:
+              schema:
+                type: object
+
   /render:
     post:
       operationId: renderPdf
@@ -182,6 +210,27 @@ components:
         left:
           type: string
           default: "0mm"
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+        - version
+        - region
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          example: render-image
+        version:
+          type: string
+          example: "0.1.0"
+        region:
+          type: string
+          example: us-east-1
 
     ErrorResponse:
       type: object
