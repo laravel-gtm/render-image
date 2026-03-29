@@ -6,13 +6,57 @@ on:
       - "v*.*.*"
 
 permissions:
+  actions: write
   contents: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build release notes
+        id: notes
+        run: |
+          TAG="${{ github.ref_name }}"
+          PREV_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | sed -n '2p')
+
+          if [ -n "$PREV_TAG" ]; then
+            RANGE="${PREV_TAG}..${TAG}"
+          else
+            RANGE="${TAG}"
+          fi
+
+          # Collect commit subjects, deduplicate, and format as bullet list
+          BULLETS=$(git log --pretty=format:'- %s' "$RANGE" --no-merges | sort -u)
+
+          {
+            echo "## What's new in ${TAG}"
+            echo ""
+            if [ -n "$PREV_TAG" ]; then
+              echo "Highlights since ${PREV_TAG}:"
+            else
+              echo "Highlights:"
+            fi
+            echo ""
+            echo "$BULLETS"
+            echo ""
+            echo "---"
+          } > release-notes.md
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "${{ github.ref_name }}" --repo "${{ github.repository }}" --generate-notes
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --generate-notes \
+            --notes-file release-notes.md
+
+      - name: Trigger image publish workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run publish-docker-image.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}"

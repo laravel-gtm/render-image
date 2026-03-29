@@ -4,6 +4,7 @@ on:
   release:
     types:
       - published
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -59,4 +60,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
-        run: gh release upload "${{ github.event.release.tag_name }}" "${IMAGE_NAME}-lambda-${VERSION}.tar.gz" --repo "${{ github.repository }}"
+        run: gh release upload "${{ github.ref_name }}" "${IMAGE_NAME}-lambda-${VERSION}.tar.gz" --repo "${{ github.repository }}"
