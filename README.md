@@ -122,14 +122,15 @@ curl -sS -X POST "${RENDER_API_URL}/render" \
 
 **Limits:** API Gateway and Lambda impose payload and response size limits (order of megabytes). Very large HTML or PDFs may need a different integration (for example async jobs and object storage).
 
-### GitHub Actions deploy (push to `main`)
+### GitHub Actions deploy (release)
 
-CI uses two workflows:
+CI uses three workflows triggered by tagging a release:
 
-1. **[`.github/workflows/publish-docker-image.yml`](.github/workflows/publish-docker-image.yml)** — builds [`Dockerfile.lambda`](Dockerfile.lambda) and pushes to **GitHub Container Registry** at `ghcr.io/<owner>/<repo>/render-image` (tags: full git SHA and `latest`).
-2. **[`.github/workflows/deploy-aws.yml`](.github/workflows/deploy-aws.yml)** — runs **after** a successful publish on `main`: pulls that image from GHCR, pushes it to Amazon **ECR** (`render-image:<sha>`), then `cdk deploy` with a **prebuilt** image (see [infrastructure/README.md](infrastructure/README.md)). Deploy does not rebuild the Docker image; it reuses the GHCR artifact.
+1. **[`.github/workflows/create-release.yml`](.github/workflows/create-release.yml)** — triggered by pushing a `v*.*.*` tag; creates a **GitHub Release** with auto-generated notes.
+2. **[`.github/workflows/publish-docker-image.yml`](.github/workflows/publish-docker-image.yml)** — triggered when a release is published; builds [`Dockerfile.lambda`](Dockerfile.lambda) and pushes to **GitHub Container Registry** at `ghcr.io/<owner>/<repo>/render-image` (tags: semantic version and `latest`). Also attaches the Lambda image tarball to the GitHub Release as an asset.
+3. **[`.github/workflows/deploy-aws.yml`](.github/workflows/deploy-aws.yml)** — runs **after** a successful publish: pulls that image from GHCR, pushes it to Amazon **ECR** (`render-image:<version>`), then `cdk deploy` with a **prebuilt** image (see [infrastructure/README.md](infrastructure/README.md)). Deploy does not rebuild the Docker image; it reuses the GHCR artifact.
 
-The deploy job assumes an IAM role via [OIDC](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services). **Bootstrap** the target account and Region once (see above) before the first deploy workflow run; the attached IAM policy expects the default CDK asset bucket and bootstrap roles to already exist. You can **re-run** deploy for an older image with **Actions → Deploy to AWS → Run workflow** and the `image_tag` input (full SHA present in GHCR).
+The deploy job assumes an IAM role via [OIDC](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services). **Bootstrap** the target account and Region once (see above) before the first deploy workflow run; the attached IAM policy expects the default CDK asset bucket and bootstrap roles to already exist. You can **re-run** deploy for an older image with **Actions → Deploy to AWS → Run workflow** and the `image_tag` input (semantic version present in GHCR).
 
 **Repository settings**
 

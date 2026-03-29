@@ -6,12 +6,10 @@ on:
       - Publish Docker Image
     types:
       - completed
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       image_tag:
-        description: Full git SHA of the image already published to GHCR
+        description: Semantic version of the image already published to GHCR (e.g. 1.2.3)
         required: true
         type: string
 
@@ -41,13 +39,24 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "tag=${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
           else
-            echo "tag=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+            echo "tag=${GITHUB_EVENT_WORKFLOW_RUN_HEAD_BRANCH#v}" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GITHUB_EVENT_WORKFLOW_RUN_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+
+      - name: Resolve checkout ref
+        id: ref
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ref=${{ github.ref }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ github.event.workflow_run.head_branch }}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.meta.outputs.tag }}
+          ref: ${{ steps.ref.outputs.ref }}
 
       - name: GHCR image name
         run: |

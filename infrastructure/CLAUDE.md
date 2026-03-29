@@ -44,6 +44,7 @@ AWS CDK app (Python, `aws-cdk-lib`) deploying the render-image service as a Lamb
 
 ## CI Pipeline
 
-1. `publish-docker-image.yml` — builds `Dockerfile.lambda`, pushes to GHCR tagged with commit SHA + `latest`
-2. `deploy-aws.yml` — triggered on successful publish; copies GHCR image to ECR, runs `cdk deploy` with prebuilt image context. Can also be triggered manually with an existing `image_tag`
+1. `create-release.yml` — on tag push (`v*.*.*`), creates a GitHub Release
+2. `publish-docker-image.yml` — on release published, builds `Dockerfile.lambda`, pushes to GHCR tagged with semantic version + `latest`, attaches Lambda image tarball to the release
+3. `deploy-aws.yml` — triggered on successful publish; copies GHCR image to ECR, runs `cdk deploy` with prebuilt image context. Can also be triggered manually with an existing `image_tag` (semantic version)
 - Requires `AWS_DEPLOY_ROLE_ARN` secret and `AWS_REGION` variable. Optional: `IMAGE_NAME`, `STACK_NAME`, `LAMBDA_MEMORY_MB`, `LAMBDA_TIMEOUT_SECONDS`, `HOSTED_ZONE_NAME`

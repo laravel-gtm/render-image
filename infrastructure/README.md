@@ -109,10 +109,11 @@ When these flags are set, `app.py` pins the stack to a concrete AWS environment 
 
 ## CI
 
-Two workflows work together:
+Three workflows form a release pipeline:
 
-1. **[`publish-docker-image.yml`](../.github/workflows/publish-docker-image.yml)** — on push to `main`, builds `Dockerfile.lambda` and pushes `ghcr.io/<owner>/<repo>/render-image` tagged with the commit SHA and `latest`.
-2. **[`deploy-aws.yml`](../.github/workflows/deploy-aws.yml)** — when **Publish Docker Image** completes successfully on `main`, checks out that commit, pulls the image from GHCR, pushes it to ECR as `render-image:<sha>`, then runs `cdk deploy` with `usePrebuiltImage` / `imageTag`. You can also run **Deploy to AWS** manually (**Actions** → **Deploy to AWS** → **Run workflow**) and pass an existing `image_tag` (full SHA) that is already in GHCR.
+1. **[`create-release.yml`](../.github/workflows/create-release.yml)** — on tag push (`v*.*.*`), creates a GitHub Release with auto-generated notes.
+2. **[`publish-docker-image.yml`](../.github/workflows/publish-docker-image.yml)** — on release published, builds `Dockerfile.lambda` and pushes `ghcr.io/<owner>/<repo>/render-image` tagged with the semantic version and `latest`. Attaches the Lambda image tarball to the release.
+3. **[`deploy-aws.yml`](../.github/workflows/deploy-aws.yml)** — when **Publish Docker Image** completes successfully, checks out that tag, pulls the image from GHCR, pushes it to ECR as `render-image:<version>`, then runs `cdk deploy` with `usePrebuiltImage` / `imageTag`. You can also run **Deploy to AWS** manually (**Actions** → **Deploy to AWS** → **Run workflow**) and pass an existing `image_tag` (semantic version) that is already in GHCR.
 
 Configure the `AWS_DEPLOY_ROLE_ARN` secret and optional `AWS_REGION` variable; see the **GitHub Actions deploy** section in the root [README](../README.md). The account must already be **bootstrapped** in that Region before the first deploy workflow run.
 

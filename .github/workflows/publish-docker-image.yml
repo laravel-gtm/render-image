@@ -1,12 +1,12 @@
 name: Publish Docker Image
 
 on:
-  push:
-    branches:
-      - main
+  release:
+    types:
+      - published
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -17,6 +17,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
       - name: GHCR image name
         run: |
@@ -41,5 +45,18 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ env.GHCR_IMAGE }}:${{ github.sha }}
+            ${{ env.GHCR_IMAGE }}:${{ steps.version.outputs.version }}
             ${{ env.GHCR_IMAGE }}:latest
+
+      - name: Save image tarball
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          docker pull "$GHCR_IMAGE:$VERSION"
+          docker save "$GHCR_IMAGE:$VERSION" | gzip > "${IMAGE_NAME}-lambda-${VERSION}.tar.gz"
+
+      - name: Upload tarball to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "${IMAGE_NAME}-lambda-${VERSION}.tar.gz" --repo "${{ github.repository }}"
