@@ -8,8 +8,11 @@ from aws_cdk import (
     Stack,
     aws_apigatewayv2 as apigwv2,
     aws_apigatewayv2_integrations as apigwv2_integrations,
+    aws_certificatemanager as acm,
     aws_ecr as ecr,
     aws_lambda as lambda_,
+    aws_route53 as route53,
+    aws_route53_targets as route53_targets,
 )
 from constructs import Construct
 
@@ -17,7 +20,9 @@ from constructs import Construct
 class RenderImageStack(Stack):  # pylint: disable=too-few-public-methods
     """Lambda container function and HTTP API with POST /render."""
 
-    def _docker_image_code(self, repo_root: Path) -> tuple[lambda_.DockerImageCode, str]:
+    def _docker_image_code(
+        self, repo_root: Path
+    ) -> tuple[lambda_.DockerImageCode, str]:
         image_name = self.node.try_get_context("imageName") or "render-image"
         use_prebuilt = str(
             self.node.try_get_context("usePrebuiltImage") or ""
@@ -94,3 +99,43 @@ class RenderImageStack(Stack):  # pylint: disable=too-few-public-methods
             value=base_url,
             description="HTTP API base URL; POST {base}/render with JSON body",
         )
+
+        self._configure_custom_domain(http_api)
+
+    def _configure_custom_domain(self, http_api: apigwv2.HttpApi) -> None:
+        """Optionally attach a custom domain backed by Route 53 + ACM."""
+        zone_name = self.node.try_get_context("hostedZoneName")
+        cert_arn = self.node.try_get_context("certificateArn")
+        if not zone_name or not cert_arn:
+            return
+
+        fqdn = f"api-{self.region}.{zone_name}"
+
+        hosted_zone = route53.HostedZone.from_lookup(
+            self, "HostedZone", domain_name=zone_name, private_zone=True
+        )
+
+        certificate = acm.Certificate.from_certificate_arn(
+            self, "Certificate", cert_arn
+        )
+
+        domain_name = apigwv2.DomainName(
+            self, "CustomDomain", domain_name=fqdn, certificate=certificate
+        )
+
+        apigwv2.ApiMapping(self, "ApiMapping", api=http_api, domain_name=domain_name)
+
+        route53.ARecord(
+            self,
+            "CustomDomainARecord",
+            zone=hosted_zone,
+            record_name=fqdn,
+            target=route53.RecordTarget.from_alias(
+                route53_targets.ApiGatewayv2DomainProperties(  # ty: ignore[invalid-argument-type]
+                    domain_name.regional_domain_name,
+                    domain_name.regional_hosted_zone_id,
+                )
+            ),
+        )
+
+        CfnOutput(self, "CustomDomainUrl", value=f"https://{fqdn}")

@@ -141,6 +141,7 @@ The deploy job assumes an IAM role via [OIDC](https://docs.github.com/en/actions
 | Variable | `STACK_NAME` | No | `RenderImageStack` | CloudFormation stack name |
 | Variable | `LAMBDA_MEMORY_MB` | No | `3008` | Lambda function memory in MB |
 | Variable | `LAMBDA_TIMEOUT_SECONDS` | No | `29` | Lambda function timeout in seconds |
+| Variable | `HOSTED_ZONE_NAME` | No | — | Route 53 private hosted zone for custom domain (e.g. `laravel-gtm.cloud`). When set, the deploy workflow looks up an ACM certificate for `api-{region}.{zone}` and attaches it to the HTTP API |
 
 **AWS: OIDC provider (once per account)**
 
@@ -159,7 +160,19 @@ aws iam create-open-id-connect-provider \
 2. Copy [infrastructure/iam/github-actions-deploy-policy.json](infrastructure/iam/github-actions-deploy-policy.json) and replace `YOUR_ACCOUNT_ID` and `YOUR_REGION` everywhere (including the S3 bootstrap asset bucket name). Attach the result as an **inline or managed customer policy** on the same role.
 3. Policies target the default CDK bootstrap qualifier `hnb659fds`. If you use a custom bootstrap qualifier, widen ARNs (for example `cdk-*` S3 bucket and IAM role patterns) to match your bootstrap stack.
 
-The deploy policy grants `sts:AssumeRole` on `cdk-hnb659fds-*` bootstrap roles (for container asset publishing), CloudFormation, the CDK asset S3 bucket, ECR, Lambda, API Gateway, Logs, EventBridge rules used by CDK, and IAM role management in your account for stack-created roles. Tighten resources if your organization requires least privilege.
+The deploy policy grants `sts:AssumeRole` on `cdk-hnb659fds-*` bootstrap roles (for container asset publishing), CloudFormation, the CDK asset S3 bucket, ECR, Lambda, API Gateway, Logs, EventBridge rules used by CDK, IAM role management in your account for stack-created roles, Route 53 (hosted zone lookup and record management), and ACM (certificate discovery). Tighten resources if your organization requires least privilege.
+
+**Custom domain (optional)**
+
+You can give the HTTP API a stable hostname instead of the auto-generated `execute-api` URL. The domain follows the pattern `api-{region}.{zone}` (e.g. `api-us-east-1.laravel-gtm.cloud`).
+
+Prerequisites:
+
+1. **Route 53 private hosted zone** — create (or import) a private hosted zone for your domain (e.g. `laravel-gtm.cloud`) and associate it with the VPC(s) that will call the API.
+2. **ACM certificate** — request a certificate in the **same region** as the deployment for the FQDN `api-{region}.{zone}` (e.g. `api-us-east-1.laravel-gtm.cloud`). Validate the certificate via DNS (Cloudflare or whichever provider hosts the public zone for validation records). The certificate must be in the `Issued` state before deploying.
+3. **Set the `HOSTED_ZONE_NAME` variable** in your GitHub repository settings (e.g. `laravel-gtm.cloud`). The deploy workflow will automatically discover the matching ACM certificate ARN and pass it to CDK.
+
+When deployed with the custom domain, CloudFormation outputs both `RenderApiUrl` (the default endpoint) and `CustomDomainUrl` (`https://api-{region}.{zone}`). From within the associated VPC, the custom domain resolves to the API Gateway.
 
 ### Cloudflare Worker proxy flow
 

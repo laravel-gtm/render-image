@@ -94,15 +94,35 @@ jobs:
         working-directory: infrastructure
         run: uv sync
 
+      - name: Look up ACM certificate for custom domain
+        if: vars.HOSTED_ZONE_NAME != ''
+        id: custom-domain
+        run: |
+          FQDN="api-${AWS_REGION}.${{ vars.HOSTED_ZONE_NAME }}"
+          CERT_ARN=$(aws acm list-certificates \
+            --query "CertificateSummaryList[?DomainName=='${FQDN}'].CertificateArn | [0]" \
+            --output text)
+          if [ "$CERT_ARN" != "None" ] && [ -n "$CERT_ARN" ]; then
+            echo "cert_arn=${CERT_ARN}" >> "$GITHUB_OUTPUT"
+            echo "hosted_zone_name=${{ vars.HOSTED_ZONE_NAME }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::No ACM certificate found for ${FQDN} — skipping custom domain"
+          fi
+
       - name: CDK deploy
         working-directory: infrastructure
         env:
           IMAGE_TAG: ${{ steps.meta.outputs.tag }}
         run: |
+          DOMAIN_ARGS=""
+          if [ -n "${{ steps.custom-domain.outputs.cert_arn }}" ]; then
+            DOMAIN_ARGS="-c hostedZoneName=${{ steps.custom-domain.outputs.hosted_zone_name }} -c certificateArn=${{ steps.custom-domain.outputs.cert_arn }}"
+          fi
           npx aws-cdk@^2 deploy --require-approval never \
             -c usePrebuiltImage=true \
             -c "imageTag=${IMAGE_TAG}" \
             -c "imageName=${IMAGE_NAME}" \
             -c "stackName=${{ vars.STACK_NAME || 'RenderImageStack' }}" \
             -c "lambdaMemoryMb=${{ vars.LAMBDA_MEMORY_MB || '3008' }}" \
-            -c "lambdaTimeoutSeconds=${{ vars.LAMBDA_TIMEOUT_SECONDS || '29' }}"
+            -c "lambdaTimeoutSeconds=${{ vars.LAMBDA_TIMEOUT_SECONDS || '29' }}" \
+            $DOMAIN_ARGS

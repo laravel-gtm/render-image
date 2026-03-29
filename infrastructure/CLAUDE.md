@@ -39,9 +39,11 @@ AWS CDK app (Python, `aws-cdk-lib`) deploying the render-image service as a Lamb
   - `stackName` — CloudFormation stack name (default: `RenderImageStack`)
   - `lambdaMemoryMb` — Lambda memory in MB (default: `3008`)
   - `lambdaTimeoutSeconds` — Lambda timeout in seconds (default: `29`)
+  - `hostedZoneName` — Route 53 private hosted zone for custom domain (optional; e.g. `laravel-gtm.cloud`). When set, creates `api-{region}.{zone}` domain on the HTTP API
+  - `certificateArn` — ACM certificate ARN for the custom domain (required when `hostedZoneName` is set)
 
 ## CI Pipeline
 
 1. `publish-docker-image.yml` — builds `Dockerfile.lambda`, pushes to GHCR tagged with commit SHA + `latest`
 2. `deploy-aws.yml` — triggered on successful publish; copies GHCR image to ECR, runs `cdk deploy` with prebuilt image context. Can also be triggered manually with an existing `image_tag`
-- Requires `AWS_DEPLOY_ROLE_ARN` secret and `AWS_REGION` variable. Optional: `IMAGE_NAME`, `STACK_NAME`, `LAMBDA_MEMORY_MB`, `LAMBDA_TIMEOUT_SECONDS`
+- Requires `AWS_DEPLOY_ROLE_ARN` secret and `AWS_REGION` variable. Optional: `IMAGE_NAME`, `STACK_NAME`, `LAMBDA_MEMORY_MB`, `LAMBDA_TIMEOUT_SECONDS`, `HOSTED_ZONE_NAME`

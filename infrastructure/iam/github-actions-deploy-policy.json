@@ -150,6 +150,28 @@
             }
         },
         {
+            "Sid": "Route53",
+            "Effect": "Allow",
+            "Action": [
+                "route53:GetHostedZone",
+                "route53:ListHostedZones",
+                "route53:ListHostedZonesByName",
+                "route53:ChangeResourceRecordSets",
+                "route53:GetChange",
+                "route53:ListResourceRecordSets"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "AcmRead",
+            "Effect": "Allow",
+            "Action": [
+                "acm:ListCertificates",
+                "acm:DescribeCertificate"
+            ],
+            "Resource": "*"
+        },
+        {
             "Sid": "StsGetCallerIdentity",
             "Effect": "Allow",
             "Action": "sts:GetCallerIdentity",
